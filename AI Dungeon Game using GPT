@@ -78,3 +78,16 @@ streamlit
 openai
 python-dotenv
 
+
+----offiline huggingface-----
+# gpt_engine_hf.py
+from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch
+
+tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-neo-1.3B")
+model = AutoModelForCausalLM.from_pretrained("EleutherAI/gpt-neo-1.3B")
+
+def ask_local_gpt(prompt):
+    inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=1024)
+    outputs = model.generate(**inputs, max_length=150, do_sample=True, temperature=0.9)
+    return tokenizer.decode(outputs[0], skip_special_tokens=True)
