@@ -1,0 +1,133 @@
+# preprocess.py
+import cv2
+import os
+
+def resize_faces(input_dir, output_dir, size=128):
+    os.makedirs(output_dir, exist_ok=True)
+    for img_name in os.listdir(input_dir):
+        img_path = os.path.join(input_dir, img_name)
+        try:
+            img = cv2.imread(img_path)
+            img = cv2.resize(img, (size, size))
+            cv2.imwrite(os.path.join(output_dir, img_name), img)
+        except:
+            pass
+
+resize_faces("raw_utkface", "data/utk_resized")
+---------------------
+# dataloader.py
+import os
+import numpy as np
+import cv2
+from tensorflow.keras.utils import Sequence
+
+class UTKFaceLoader(Sequence):
+    def __init__(self, folder, batch_size=32, img_size=128):
+        self.files = os.listdir(folder)
+        self.folder = folder
+        self.batch_size = batch_size
+        self.img_size = img_size
+
+    def __len__(self):
+        return len(self.files) // self.batch_size
+
+    def __getitem__(self, idx):
+        batch = self.files[idx * self.batch_size:(idx + 1) * self.batch_size]
+        imgs, ages = [], []
+        for file in batch:
+            age = int(file.split("_")[0])
+            img = cv2.imread(os.path.join(self.folder, file))
+            img = cv2.resize(img, (self.img_size, self.img_size)) / 127.5 - 1.0
+            imgs.append(img)
+            ages.append(age)
+        return np.array(imgs), np.array(ages)
+----------------------
+# aging_gan.py
+from tensorflow.keras.layers import Input, Dense, Reshape, Flatten, Conv2D, Conv2DTranspose, LeakyReLU, Dropout
+from tensorflow.keras.models import Model
+
+def build_generator(img_shape, age_dim=1):
+    input_img = Input(shape=img_shape)
+    age = Input(shape=(age_dim,))
+    merged = Dense(np.prod(img_shape))(age)
+    merged = Reshape(img_shape)(merged)
+    x = Conv2D(64, kernel_size=3, padding='same')(input_img)
+    x = LeakyReLU(0.2)(x)
+    x = Conv2DTranspose(3, kernel_size=3, activation='tanh', padding='same')(x)
+    model = Model([input_img, age], x)
+    return model
+
+def build_discriminator(img_shape, age_dim=1):
+    input_img = Input(shape=img_shape)
+    age = Input(shape=(age_dim,))
+    x = Conv2D(64, kernel_size=3, strides=2, padding='same')(input_img)
+    x = LeakyReLU(0.2)(x)
+    x = Flatten()(x)
+    x = Dense(1, activation='sigmoid')(x)
+    model = Model([input_img, age], x)
+    return model
+-------------
+# train.py
+from tensorflow.keras.optimizers import Adam
+from dataloader import UTKFaceLoader
+from aging_gan import build_generator, build_discriminator
+import numpy as np
+
+img_shape = (128, 128, 3)
+batch_size = 32
+
+generator = build_generator(img_shape)
+discriminator = build_discriminator(img_shape)
+
+opt = Adam(0.0002, 0.5)
+discriminator.compile(loss='binary_crossentropy', optimizer=opt, metrics=['accuracy'])
+
+# Combined model
+discriminator.trainable = False
+z_img = Input(shape=img_shape)
+z_age = Input(shape=(1,))
+gen_img = generator([z_img, z_age])
+valid = discriminator([gen_img, z_age])
+combined = Model([z_img, z_age], valid)
+combined.compile(loss='binary_crossentropy', optimizer=opt)
+
+# Training
+data = UTKFaceLoader("data/utk_resized", batch_size=batch_size)
+for epoch in range(100):
+    for batch_imgs, batch_ages in data:
+        batch_ages = batch_ages / 100.0  # normalize age
+        noise = batch_imgs
+        fake_imgs = generator.predict([noise, batch_ages])
+
+        # Train discriminator
+        real = np.ones((batch_size, 1))
+        fake = np.zeros((batch_size, 1))
+        d_loss_real = discriminator.train_on_batch([batch_imgs, batch_ages], real)
+        d_loss_fake = discriminator.train_on_batch([fake_imgs, batch_ages], fake)
+
+        # Train generator
+        g_loss = combined.train_on_batch([noise, batch_ages], real)
+
+    print(f"[Epoch {epoch}] D loss: {d_loss_real[0]:.4f}, G loss: {g_loss:.4f}")
+    if epoch % 10 == 0:
+        generator.save(f"checkpoints/gen_epoch_{epoch}.h5")
+
+--------------------------
+# generate.py
+from tensorflow.keras.models import load_model
+import cv2
+import numpy as np
+
+model = load_model("checkpoints/gen_epoch_90.h5")
+
+def age_image(img_path, age):
+    img = cv2.imread(img_path)
+    img = cv2.resize(img, (128, 128))
+    img = img / 127.5 - 1.0
+    img = np.expand_dims(img, 0)
+    age = np.array([[age / 100.0]])
+    pred = model.predict([img, age])
+    pred = ((pred[0] + 1.0) * 127.5).astype(np.uint8)
+    cv2.imwrite("aged_face.png", pred)
+
+age_image("test_face.jpg", age=70)
