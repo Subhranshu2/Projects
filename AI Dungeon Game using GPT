@@ -1,0 +1,80 @@
+// app.py
+import streamlit as st
+from gpt_engine import ask_gpt
+from game_memory import GameMemory
+from presets import presets
+
+st.set_page_config(page_title="AI Dungeon", layout="wide")
+st.title("🧙‍♂️ AI Dungeon Game")
+
+if "memory" not in st.session_state:
+    st.session_state.memory = GameMemory()
+
+character = st.selectbox("Choose your character:", list(presets.keys()))
+if st.button("Start New Game"):
+    intro = presets[character]
+    response = ask_gpt(intro)
+    st.session_state.memory.clear()
+    st.session_state.memory.add("Start the story.", response)
+
+user_input = st.text_input("What do you do?")
+if user_input:
+    prompt = st.session_state.memory.get_prompt() + f"\n> You: {user_input}"
+    response = ask_gpt(prompt)
+    st.session_state.memory.add(user_input, response)
+
+st.markdown("### 📝 Story so far:")
+st.text("\n".join(st.session_state.memory.story))
+
+// gpt-engine.py
+
+import openai
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+openai.api_key = os.getenv("your-openAI-key")
+
+def ask_gpt(prompt, model="gpt-3.5-turbo"):
+    messages = [
+        {"role": "system", "content": "You are a Dungeon Master guiding the player through a fantasy world."},
+        {"role": "user", "content": prompt}
+    ]
+    response = openai.ChatCompletion.create(
+        model=model,
+        messages=messages,
+        temperature=0.9,
+        max_tokens=200
+    )
+    return response.choices[0].message.content.strip()
+
+// game-memory.py
+class GameMemory:
+    def __init__(self):
+        self.story = []
+
+    def add(self, user_input, ai_response):
+        self.story.append(f"> You: {user_input}\n{ai_response}")
+
+    def get_prompt(self):
+        return "\n".join(self.story[-10:])  # last 10 turns
+
+    def clear(self):
+        self.story = []
+
+
+// present.py
+presets = {
+    "Knight": "You are a brave knight in the kingdom of Eldoria, tasked with finding the lost crown of the king.",
+    "Wizard": "You are a wise wizard seeking knowledge in the ancient ruins.",
+    "Thief": "You are a sneaky thief in a city of shadows looking for the legendary jewel.",
+}
+
+//.env
+OPENAI_API_KEY=your-openai-key
+
+//requirements.txt
+streamlit
+openai
+python-dotenv
+
