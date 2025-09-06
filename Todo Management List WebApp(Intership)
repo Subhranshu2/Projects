@@ -1,0 +1,603 @@
+----HTML CODE-----
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NALCO TO-DO List App</title>
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+    integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="todo-app">
+      <h1>To-Do App</h1>
+      <div class="stat-container">
+        <div class="details">
+            <h3>Keep it Up!</h3>
+            <div id="progressbar">
+                <div id="progress"></div>
+            </div>
+        </div>
+        <div class="stats-number">
+            <p id="numbers">0 / 0</p>
+        </div>
+      </div>
+      <div class="input-area">
+        <input type="text" id="task-input" placeholder="Add a new task..." />
+        <button id="add-task-btn"><i class="fa-solid fa-plus"></i></button>
+      </div>
+      <div class="todos-container">
+        <ul id="task-list"></ul>
+        <div class="empty-image">
+          <div class="glass-card">
+            <img src="./images/empty.jpg" alt="Empty" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tsparticles/confetti@3.0.3/tsparticles.confetti.bundle.min.js"></script>
+</body>
+</html>
+
+----CSS CODE----
+
+@import url('https://fonts.googleapis.com/css2?family=Jost:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Jost", sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: url(./images/3607424.jpg) no-repeat center center/cover;
+  overflow: hidden;
+}
+
+.container {
+  width: 90%;
+  max-width: 400px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 15px;
+  padding: 2.5rem 2rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.button-box {
+  width: 100%;
+  margin-bottom: 2rem;
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  background-color: #f0f2f5;
+  border-radius: 30px;
+  box-shadow: 0 0 20px 9px rgba(255, 97, 36, 0.15);
+}
+
+.toggle-btn {
+  flex: 1;
+  padding: 0.8rem 1.5rem;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  font-weight: 600;
+  color: #4a5568;
+  transition: color 0.3s ease;
+  z-index: 1;
+  position: relative;
+}
+
+#btn {
+  position: absolute;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(to right, #ff105f, #ffad06);
+  border-radius: 30px;
+  transition: 0.5s ease;
+  z-index: 0;
+  top: 0;
+  left: 0;
+}
+
+.toggle-btn.active {
+  color: #ffffff;
+}
+
+.input-group {
+  position: absolute;
+  width: 85%;
+  left: 100%;
+  transition: 0.5s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-top: 1rem;
+}
+
+.input-group.active {
+  left: 7.5%;
+}
+
+.input-field {
+  width: 100%;
+  padding: 0.8rem 0.5rem;
+  border: none;
+  border-bottom: 2px solid #e2e8f0;
+  outline: none;
+  background: transparent;
+  font-size: 1rem;
+  color: #2d3748;
+  transition: border-color 0.3s ease;
+}
+
+.input-field:focus {
+  border-bottom-color: #4299e1;
+}
+
+.check-box {
+  margin-right: 0.5rem;
+  accent-color: #ffad06;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 0.8rem 1.5rem;
+  cursor: pointer;
+  background: linear-gradient(to right, #ff105f, #ffad06);
+  border: 0;
+  border-radius: 30px;
+  color: #fff;
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin-top: 1.5rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 5px 15px rgba(255, 160, 6, 0.3);
+}
+
+.submit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(255, 160, 6, 0.4);
+}
+
+.message-box-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.message-box-overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.message-box {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 10px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  max-width: 350px;
+  width: 90%;
+  transform: translateY(-20px);
+  transition: transform 0.3s ease;
+}
+
+.message-box-overlay.show .message-box {
+  transform: translateY(0);
+}
+
+.message-box h3 {
+  color: #333;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.message-box p {
+  color: #555;
+  margin-bottom: 1.5rem;
+  font-size: 1rem;
+}
+
+.message-box button {
+  background: linear-gradient(to right, #ff105f, #ffad06);
+  color: white;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 25px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background 0.3s ease;
+}
+
+.message-box button:hover {
+  background: linear-gradient(to right, #e00e50, #e09b05);
+}
+
+/* Add the full todo styles after login styles */
+.todo-app {
+  margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  color: #fff;
+}
+
+.todo-app h1 {
+  font-size: 2rem;
+}
+
+.stat-container {
+  padding: 15px 20px;
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  width: 100%;
+}
+
+.details {
+  width: 100%;
+}
+
+.details h3 {
+  color: #fff;
+}
+
+#progressbar {
+  width: 100%;
+  height: 7px;
+  background: rgba(255, 194, 209, 0.3);
+  border-radius: 20px;
+  margin-top: 15px;
+}
+
+#progress {
+  width: 50%;
+  height: 100%;
+  background: #ff6f91;
+  border-radius: 20px;
+  transition: width 0.3s ease;
+}
+
+#numbers {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  background: #ff6f91;
+  border: 2px solid rgba(255, 194, 209, 0.3);
+  font-weight: bold;
+  border-radius: 50%;
+  font-size: 1.5rem;
+}
+
+.input-area {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.input-area input {
+  flex: 1;
+  padding: 10px 17px;
+  font-size: 1.1rem;
+  border: none;
+  outline: none;
+  border-radius: 22px;
+  background: rgba(255, 194, 209, 0.3);
+  color: #dbdbdb;
+}
+
+.input-area input::placeholder {
+  color: #bcbcbc;
+}
+
+.input-area button {
+  margin-left: 10px;
+  padding: 8px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 1.1rem;
+  background: rgba(255, 194, 209, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.todos-container {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#task-list {
+  width: 100%;
+}
+
+#task-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 194, 209, 0.3);
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  border-radius: 30%;
+  font-size: 1.2rem;
+  color: #fff;
+}
+
+#task-list li span {
+  flex: 1;
+  margin-left: 10px;
+  word-wrap: break-word;
+}
+
+#task-list li.completed span {
+  text-decoration: 2px line-through #000;
+  color: #000;
+}
+
+.task-buttons {
+  display: flex;
+  gap: 10px;
+  margin-right: auto;
+}
+
+.task-buttons button {
+  border-radius: 50%;
+  width: 30px;
+  color: #fff;
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.task-buttons .edit-btn {
+  background: #ffbf00;
+}
+
+.task-buttons .delete-btn {
+  background: #ff6f91;
+}
+
+.empty-image {
+  margin-top: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 1.5rem;
+  opacity: 0.6;
+  text-align: center;
+  height: 200px;
+  flex-direction: column;
+  max-width: 150px;
+  height: auto;
+  margin-bottom: 0.5rem;
+}
+
+.empty-image img {
+  width: 250px;
+  height: auto;
+  opacity: 0.6;
+  filter: drop-shadow(0 4px 15px rgba(0, 0, 0, 0.3));
+  transition: transform 0.3s ease;
+}
+
+.empty-image img:hover {
+  transform: scale(1.05);
+}
+
+@media (max-width: 600px) {
+  .container {
+    margin: 0 20px;
+    padding: 0 10px;
+  }
+
+  .todo-app {
+    padding: 1.5rem;
+    gap: 20px;
+  }
+
+  #numbers {
+    width: 60px;
+    height: 60px;
+    font-size: 1rem;
+  }
+
+  .input-area input {
+    font-size: 1rem;
+  }
+
+  #task-list {
+    font-size: 1rem;
+  }
+}
+
+----JAVASCRIPT CODE----
+
+document.addEventListener('DOMContentLoaded', () => {
+      const taskInput = document.getElementById('task-input');
+      const addTaskBtn = document.getElementById('add-task-btn');
+      const taskList = document.getElementById('task-list');
+      const emptyImage = document.querySelector('.empty-image');
+      const todosContainer = document.querySelector('.todos-container');
+      const progressBar = document.getElementById('progress');
+      const progressNumbers = document.getElementById('numbers');
+
+      const toggleEmptyState = () => {
+        emptyImage.style.display = taskList.children.length === 0 ? 'block' : 'none';
+        todosContainer.style.width = taskList.children.length > 0 ? '100%' : '50%';
+      };
+
+      const updateProgress = () => {
+        const totalTasks = taskList.children.length;
+        const completeTasks = taskList.querySelectorAll('.checkbox:checked').length;
+        progressBar.style.width = totalTasks ? ${(completeTasks / totalTasks) * 100}% : '0%';
+        progressNumbers.textContent = ${completeTasks} / ${totalTasks};
+
+        if (totalTasks > 0 && completeTasks === totalTasks) {
+          Confetti();
+        }
+      };
+
+      const saveTaskToLocalStorage = () => {
+        const tasks = Array.from(taskList.querySelectorAll('li')).map(li => ({
+          text: li.querySelector('span').textContent,
+          completed: li.querySelector('.checkbox').checked
+        }));
+        localStorage.setItem('tasks', JSON.stringify(tasks)); 
+      };
+
+      const loadTaskFromLocalStorage = () => {
+        const savedTasks = JSON.parse(localStorage.getItem('tasks')) || [];
+        savedTasks.forEach(({ text, completed }) => addTask(text, completed));
+        toggleEmptyState();
+        updateProgress();
+      };
+
+      const addTask = (text = '', completed = false) => {
+        const taskText = text || taskInput.value.trim();
+        if (!taskText) return;
+
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <input type="checkbox" class="checkbox" ${completed ? 'checked' : ''}>
+          <span>${taskText}</span>
+          <div class="task-buttons">
+            <button class="edit-btn"><i class="fa-solid fa-pen"></i></button>
+            <button class="delete-btn"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        `;
+
+        const checkbox = li.querySelector('.checkbox');
+        const editBtn = li.querySelector('.edit-btn');
+
+        if (completed) {
+          li.classList.add('completed');
+          editBtn.disabled = true;
+          editBtn.style.opacity = '0.5';
+          editBtn.style.pointerEvents = 'none';
+        }
+
+        checkbox.addEventListener('change', () => {
+          const isChecked = checkbox.checked;
+          li.classList.toggle('completed', isChecked);
+          editBtn.disabled = isChecked;
+          editBtn.style.opacity = isChecked ? '0.5' : '1';
+          editBtn.style.pointerEvents = isChecked ? 'none' : 'auto';
+          updateProgress();
+          saveTaskToLocalStorage();
+        });
+
+        editBtn.addEventListener('click', () => {
+          if (!checkbox.checked) {
+            taskInput.value = li.querySelector('span').textContent;
+            li.remove();
+            toggleEmptyState();
+            updateProgress();
+            saveTaskToLocalStorage();
+          }
+        });
+
+        li.querySelector('.delete-btn').addEventListener('click', () => {
+          li.remove();
+          toggleEmptyState();
+          updateProgress();
+          saveTaskToLocalStorage();
+        });
+
+        taskList.appendChild(li);
+        taskInput.value = '';
+        toggleEmptyState();
+        updateProgress();
+        saveTaskToLocalStorage();
+      };
+
+      addTaskBtn.addEventListener('click', () => addTask());
+
+      taskInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          addTask();
+        }
+      });
+
+      loadTaskFromLocalStorage();
+    });
+    
+
+const Confetti = () => {
+    const count = 200,
+  defaults = {
+    origin: { y: 0.7 },
+  };
+
+function fire(particleRatio, opts) {
+  confetti(
+    Object.assign({}, defaults, opts, {
+      particleCount: Math.floor(count * particleRatio),
+    })
+  );
+}
+
+fire(0.25, {
+  spread: 26,
+  startVelocity: 55,
+});
+
+fire(0.2, {
+  spread: 60,
+});
+
+fire(0.35, {
+  spread: 100,
+  decay: 0.91,
+  scalar: 0.8,
+});
+
+fire(0.1, {
+  spread: 120,
+  startVelocity: 25,
+  decay: 0.92,
+  scalar: 1.2,
+});
+
+fire(0.1, {
+  spread: 120,
+  startVelocity: 45,
+});
+}
