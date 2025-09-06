@@ -1,0 +1,54 @@
+import nltk
+from nltk.stem import WordNetLemmatizer
+lemmatizer = WordNetLemmatizer()
+import random
+
+# Intents and responses data structure
+intents = {
+    'greeting': [
+        {'pattern': r'hello', 'response': 'Hi!'},
+        {'pattern': r'hi', 'response': 'Hey!'}
+    ],
+    'goodbye': [
+        {'pattern': r'bye', 'response': 'See you later!'},
+        {'pattern': r'see you', 'response': 'Bye for now!'}
+    ]
+}
+
+def process_text(text):
+    """Process the user input text"""
+    tokens = nltk.word_tokenize(text)
+    lemmatized_tokens = [lemmatizer.lemmatize(token) for token in tokens]
+    return lemmatized_tokens
+
+def match_intent(patterns, text):
+    """Match intent based on patterns"""
+    for pattern in patterns:
+        if any(re.match(pattern['pattern'], text)) and random.random() < 0.5: # 50% chance of matching
+            return pattern['response']
+    return None
+
+def respond(text):
+    """Generate response to user input"""
+    lemmatized_text = process_text(text)
+    for intent in intents.values():
+        for pattern in intent:
+            if match_intent([pattern], lemmatized_text):
+                return pattern['response']
+    # Fallback response
+    return "I didn't understand that. Can you please rephrase?"
+
+def chatbot_converse():
+    """Chatbot conversation loop"""
+    print("Welcome to the chatbot!")
+    while True:
+        user_input = input("> ")
+        if user_input.lower() == 'quit':
+            break
+        response = respond(user_input)
+        print(response)
+
+if __name__ == "__main__":
+    nltk.download('punkt')
+    nltk.download('wordnet')
+    chatbot_converse()
