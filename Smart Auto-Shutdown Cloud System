@@ -1,0 +1,46 @@
+“I built a Smart Auto-Shutdown system on cloud. 
+It monitors VM CPU usage using cloud monitoring. 
+If a VM stays idle for a defined time, a serverless function automatically shuts it down and sends a notification. 
+This helps reduce unnecessary cloud costs and improves resource efficiency.”
+
+        ┌────────────────────┐
+        │   Cloud Scheduler  │
+        │ (Every 5 minutes)  │
+        └─────────┬──────────┘
+                  │
+                  ▼
+        ┌────────────────────┐
+        │  Serverless Logic  │
+        │ (Function / Lambda│
+        │  / Azure Function)│
+        └─────────┬──────────┘
+                  │
+        ┌─────────▼──────────┐
+        │ Cloud Monitoring   │
+        │ (CPU Metrics)      │
+        └─────────┬──────────┘
+                  │
+        ┌─────────▼──────────┐
+        │ Virtual Machine    │
+        │ (Idle VM)          │
+        └─────────┬──────────┘
+                  │
+        ┌─────────▼──────────┐
+        │ Notification       │
+        │ (Email / Alert)    │
+        └────────────────────┘
+
+THRESHOLD_CPU = 5      # percent
+IDLE_TIME = 10         # minutes
+
+function check_vm_usage():
+    cpu_usage = get_cpu_metric(vm_id)
+
+    if cpu_usage < THRESHOLD_CPU:
+        idle_minutes += 5
+    else:
+        idle_minutes = 0
+
+    if idle_minutes >= IDLE_TIME:
+        stop_vm(vm_id)
+        send_notification("VM stopped due to low usage")
