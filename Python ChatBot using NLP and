@@ -1,0 +1,80 @@
+---------------------------------------------------------------------------------- BOB THE CHATBOT --------------------------------------------------------------------------------------------------------
+
+chatbot.py
+def chatbot():
+    print("🤖 Bot: Hi! I'm your chatbot. Type 'bye' to exit.")
+
+    while True:
+        user = input("You: ").lower()
+
+        if user == "bye":
+            print("🤖 Bot: Goodbye! 👋")
+            break
+
+        elif "hello" in user or "hi" in user:
+            print("🤖 Bot: Hello! How can I help you?")
+
+        elif "name" in user:
+            print("🤖 Bot: I am Bob the simple Python chatbot.")
+
+        elif "help" in user:
+            print("🤖 Bot: I can answer basic questions like greetings.")
+
+        else:
+            print("🤖 Bot: Sorry, I didn't understand that.")
+chatbot()
+------
+TO RUN BOT:  python chatbot.py
+--------------------------------------------------------------------------------------------
+
+Add Intelligence (Dictionary-based)
+responses = {
+    "hello": "Hello there!",
+    "how are you": "I'm doing great 😊",
+    "what is ai": "AI stands for Artificial Intelligence.",
+    "bye": "Goodbye 👋"
+}
+
+def chatbot():
+    print("🤖 Bot: Hi! Ask me something.")
+
+    while True:
+        user = input("You: ").lower()
+
+        for key in responses:
+            if key in user:
+                print("🤖 Bot:", responses[key])
+                break
+        else:
+            print("🤖 Bot: I don't understand.")
+chatbot()
+-------------------------------------------------------------------------------------------------
+
+Uses NLTK to understand intent.
+Install
+pip install nltk
+
+NLP Code:
+import nltk
+from nltk.tokenize import word_tokenize
+
+nltk.download('punkt')
+
+def chatbot():
+    print("🤖 Bot: Hi! (NLP version)")
+
+    while True:
+        user = input("You: ").lower()
+        tokens = word_tokenize(user)
+
+        if "bye" in tokens:
+            print("🤖 Bot: Goodbye!")
+            break
+        elif "hello" in tokens or "hi" in tokens:
+            print("🤖 Bot: Hello!")
+        elif "ai" in tokens:
+            print("🤖 Bot: AI means Artificial Intelligence.")
+        else:
+            print("🤖 Bot: I am still learning.")
+
+chatbot()
