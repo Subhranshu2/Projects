@@ -1,0 +1,792 @@
+----------------------------------------------------------------------------------  AI Chatbot (Backend – Python)  ------------------------------------------------------------------------------------------
+
+We’ll use:
+
+Python
+
+OpenAI-compatible API (works with OpenAI or any OpenAI-style provider)
+
+FastAPI (modern & fast)
+
+1️⃣ Install dependencies
+pip install fastapi uvicorn openai python-dotenv
+
+2️⃣ Project Structure
+ai-chatbot/
+│── main.py
+│── .env
+│── requirements.txt
+
+3️⃣ Add API Key (.env)
+OPENAI_API_KEY=your_api_key_here
+
+4️⃣ Backend Code (main.py)
+from fastapi import FastAPI
+from pydantic import BaseModel
+import openai
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
+app = FastAPI(title="AI Chatbot")
+
+class ChatRequest(BaseModel):
+    message: str
+
+@app.post("/chat")
+def chat(request: ChatRequest):
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "You are a helpful AI assistant."},
+            {"role": "user", "content": request.message}
+        ]
+    )
+
+    return {
+        "reply": response.choices[0].message["content"]
+    }
+
+5️⃣ Run the Server
+uvicorn main:app --reload
+
+
+Open browser:
+
+http://127.0.0.1:8000/docs
+
+
+✅ You now have a working AI chatbot API.
+
+🔹 LEVEL 2: ChatGPT-Style Web UI
+1️⃣ Simple Frontend (index.html)
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Chatbot</title>
+    <style>
+        body { font-family: Arial; background:#111; color:#fff }
+        #chat { width: 400px; margin: auto }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="chat">
+    <h2>🤖 AI Chatbot</h2>
+    <div id="output"></div>
+    <input id="msg" placeholder="Type your message..." />
+    <button onclick="send()">Send</button>
+</div>
+
+<script>
+async function send() {
+    const msg = document.getElementById("msg").value;
+
+    const res = await fetch("http://127.0.0.1:8000/chat", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({message: msg})
+    });
+
+    const data = await res.json();
+    document.getElementById("output").innerHTML +=
+        `<p><b>You:</b> ${msg}</p>
+         <p><b>Bot:</b> ${data.reply}</p>`;
+}
+</script>
+
+</body>
+</html>
+
+
+✅ This behaves like ChatGPT:
+
+User types
+
+AI responds
+
+Context-aware
+
+🔹 LEVEL 3: Add Chat Memory (Important!)
+chat_history = []
+
+@app.post("/chat")
+def chat(request: ChatRequest):
+    chat_history.append({"role": "user", "content": request.message})
+
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            *chat_history
+        ]
+    )
+
+    reply = response.choices[0].message["content"]
+    chat_history.append({"role": "assistant", "content": reply})
+
+    return {"reply": reply}
+
+
+Now the chatbot:
+
+Remembers conversation
+
+Feels human-like
+
+🔹 Architecture (Interview Gold ⭐)
+User (Web / App)
+   ↓
+Frontend (HTML/JS)
+   ↓
+FastAPI Backend
+   ↓
+LLM (OpenAI / GPT)
+   ↓
+Response
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+MODULE 1: Add Login + Database (Production Style)
+
+We’ll use:
+
+FastAPI (backend)
+
+JWT Authentication
+
+SQLite (easy) → MongoDB (scalable)
+
+Password hashing
+
+1️⃣ Install dependencies
+pip install fastapi uvicorn sqlalchemy passlib[bcrypt] python-jose
+
+2️⃣ Database Model (users.db)
+from sqlalchemy import Column, Integer, String
+from sqlalchemy.ext.declarative import declarative_base
+
+Base = declarative_base()
+
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True)
+    username = Column(String, unique=True)
+    password = Column(String)
+
+3️⃣ Password Hashing
+from passlib.context import CryptContext
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def hash_password(password):
+    return pwd_context.hash(password)
+
+def verify_password(password, hashed):
+    return pwd_context.verify(password, hashed)
+
+4️⃣ Signup API
+@app.post("/signup")
+def signup(username: str, password: str):
+    hashed = hash_password(password)
+    user = User(username=username, password=hashed)
+    db.add(user)
+    db.commit()
+    return {"msg": "User created"}
+
+5️⃣ Login + JWT Token
+from jose import jwt
+SECRET_KEY = "secret123"
+
+@app.post("/login")
+def login(username: str, password: str):
+    user = db.query(User).filter(User.username == username).first()
+    if not user or not verify_password(password, user.password):
+        return {"error": "Invalid credentials"}
+
+    token = jwt.encode({"sub": username}, SECRET_KEY)
+    return {"access_token": token}
+
+
+✅ Now you have secure login
+✅ Interviewers LOVE JWT auth
+
+🧠 MODULE 2: Build Voice Chatbot (Speech → AI → Speech)
+
+This is 🔥 for hackathons.
+
+Flow
+User Voice
+ → Speech-to-Text
+ → AI Response
+ → Text-to-Speech
+ → Audio Output
+
+1️⃣ Install voice libraries
+pip install SpeechRecognition pyttsx3 pyaudio
+
+2️⃣ Voice Chatbot Code
+import speech_recognition as sr
+import pyttsx3
+import openai
+
+engine = pyttsx3.init()
+r = sr.Recognizer()
+
+def speak(text):
+    engine.say(text)
+    engine.runAndWait()
+
+def listen():
+    with sr.Microphone() as source:
+        audio = r.listen(source)
+        return r.recognize_google(audio)
+
+while True:
+    try:
+        user_voice = listen()
+        if "exit" in user_voice:
+            speak("Goodbye")
+            break
+
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role":"user","content":user_voice}]
+        )
+
+        reply = response.choices[0].message["content"]
+        speak(reply)
+
+    except:
+        speak("Sorry, I didn't catch that")
+
+
+🎤 Now your chatbot talks like a human
+
+🧪 MODULE 3: Customize for Interviews & Hackathons
+
+This is the MOST IMPORTANT part.
+
+🔹 Interview-Ready Architecture
+User (Web / Voice)
+   ↓
+Auth (JWT Login)
+   ↓
+FastAPI Backend
+   ↓
+LLM (AI Engine)
+   ↓
+Database (Users + Chat History)
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+1️⃣ Database Model: Chat History Table
+from sqlalchemy import Column, Integer, String, ForeignKey, Text
+from sqlalchemy.orm import relationship
+from database import Base
+
+class ChatHistory(Base):
+    __tablename__ = "chat_history"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    user_message = Column(Text)
+    bot_reply = Column(Text)
+
+
+✅ Each chat is linked to one user
+
+2️⃣ Get Current User from JWT Token
+from fastapi import Depends, HTTPException
+from fastapi.security import OAuth2PasswordBearer
+from jose import jwt
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+SECRET_KEY = "secret123"
+
+def get_current_user(token: str = Depends(oauth2_scheme)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        username = payload.get("sub")
+        user = db.query(User).filter(User.username == username).first()
+        return user
+    except:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+3️⃣ Modify Chat API (Save History)
+@app.post("/chat")
+def chat(request: ChatRequest, user: User = Depends(get_current_user)):
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": request.message}
+        ]
+    )
+
+    reply = response.choices[0].message["content"]
+
+    # SAVE TO DATABASE
+    chat = ChatHistory(
+        user_id=user.id,
+        user_message=request.message,
+        bot_reply=reply
+    )
+    db.add(chat)
+    db.commit()
+
+    return {"reply": reply}
+
+
+✅ Each message is now stored per user
+
+4️⃣ API to Fetch Chat History (Per User)
+@app.get("/history")
+def get_chat_history(user: User = Depends(get_current_user)):
+    chats = db.query(ChatHistory)\
+              .filter(ChatHistory.user_id == user.id)\
+              .all()
+
+    return [
+        {
+            "user": c.user_message,
+            "bot": c.bot_reply
+        }
+        for c in chats
+    ]
+
+✅ User only sees their own chats
+✅ Very important security point
+
+5️⃣ Frontend Usage (JS Example)
+fetch("http://127.0.0.1:8000/history", {
+  headers: {
+    "Authorization": "Bearer " + token
+  }
+})
+.then(res => res.json())
+.then(data => console.log(data));
+
+🧪 Hackathon Enhancement (Optional)
+
+Add:
+
+🗑️ Clear chat history
+
+📅 Chat timestamps
+
+📁 Multiple conversations
+
+🔍 Search in history
+
+Example (clear history):
+
+@app.delete("/history")
+def clear_history(user: User = Depends(get_current_user)):
+    db.query(ChatHistory)\
+      .filter(ChatHistory.user_id == user.id)\
+      .delete()
+    db.commit()
+    return {"msg": "Chat history cleared"}
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+✅ 1. Conversation Memory (Last N Messages)
+🎯 Goal
+
+When user sends a message, AI should remember last N messages (context).
+
+Database Update (Add role + timestamp)
+from sqlalchemy import Column, Integer, ForeignKey, Text, DateTime
+from datetime import datetime
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    session_id = Column(Integer, ForeignKey("chat_sessions.id"))
+    role = Column(String)  # "user" or "assistant"
+    content = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+Fetch Last N Messages
+def get_last_messages(db, session_id, limit=6):
+    messages = db.query(ChatMessage)\
+        .filter(ChatMessage.session_id == session_id)\
+        .order_by(ChatMessage.created_at.desc())\
+        .limit(limit)\
+        .all()
+
+    return [
+        {"role": m.role, "content": m.content}
+        for m in reversed(messages)
+    ]
+
+Chat API (With Memory)
+@app.post("/chat/{session_id}")
+def chat(session_id: int, request: ChatRequest,
+         user: User = Depends(get_current_user)):
+
+    history = get_last_messages(db, session_id, limit=6)
+
+    messages = [{"role": "system", "content": "You are a helpful assistant."}]
+    messages.extend(history)
+    messages.append({"role": "user", "content": request.message})
+
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=messages
+    )
+
+    reply = response.choices[0].message["content"]
+
+    # save both messages
+    db.add(ChatMessage(
+        user_id=user.id,
+        session_id=session_id,
+        role="user",
+        content=request.message
+    ))
+    db.add(ChatMessage(
+        user_id=user.id,
+        session_id=session_id,
+        role="assistant",
+        content=reply
+    ))
+    db.commit()
+
+    return {"reply": reply}
+
+
+✅ AI now has real memory
+✅ Interviewers LOVE this
+
+✅ 2. Multiple Chat Sessions (Like ChatGPT)
+Session Table
+class ChatSession(Base):
+    __tablename__ = "chat_sessions"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    title = Column(String)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+Create New Chat
+@app.post("/sessions")
+def create_session(user: User = Depends(get_current_user)):
+    session = ChatSession(user_id=user.id, title="New Chat")
+    db.add(session)
+    db.commit()
+    return {"session_id": session.id}
+
+List User Sessions
+@app.get("/sessions")
+def list_sessions(user: User = Depends(get_current_user)):
+    return db.query(ChatSession)\
+        .filter(ChatSession.user_id == user.id)\
+        .order_by(ChatSession.created_at.desc())\
+        .all()
+
+
+Now you have:
+
+Multiple chats
+
+Independent memory
+
+ChatGPT-style behavior
+
+✅ 3. React UI with Chat History Sidebar
+UI Layout
+| Sidebar (Chats) | Main Chat Window |
+
+React Structure
+src/
+ ├── components/
+ │    ├── Sidebar.jsx
+ │    ├── ChatWindow.jsx
+ ├── App.jsx
+
+Sidebar.jsx
+function Sidebar({ sessions, onSelect }) {
+  return (
+    <div className="sidebar">
+      {sessions.map(s => (
+        <div key={s.id} onClick={() => onSelect(s.id)}>
+          {s.title}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+ChatWindow.jsx
+function ChatWindow({ messages, onSend }) {
+  const [text, setText] = useState("");
+
+  return (
+    <div>
+      {messages.map((m, i) => (
+        <p key={i}><b>{m.role}:</b> {m.content}</p>
+      ))}
+      <input onChange={e => setText(e.target.value)} />
+      <button onClick={() => onSend(text)}>Send</button>
+    </div>
+  );
+}
+
+App.jsx (Core Logic)
+const [sessions, setSessions] = useState([]);
+const [currentSession, setCurrentSession] = useState(null);
+
+
+This gives:
+
+Chat list on left
+
+Messages on right
+
+Same UX as ChatGPT
+
+✅ 4. Voice + Saved History (FINAL BOSS 🔥)
+Voice Input → Saved Chat
+def voice_chat(session_id, user_id):
+    text = listen()  # speech → text
+
+    db.add(ChatMessage(
+        user_id=user_id,
+        session_id=session_id,
+        role="user",
+        content=text
+    ))
+
+    reply = ai_reply(text)
+
+    db.add(ChatMessage(
+        user_id=user_id,
+        session_id=session_id,
+        role="assistant",
+        content=reply
+    ))
+    db.commit()
+
+    speak(reply)
+
+
+Now:
+
+Voice chats
+
+Saved in DB
+
+Reopen later
+
+Full continuity
+
+🧠 FINAL ARCHITECTURE (INTERVIEW GOLD)
+React UI (Sidebar + Chat)
+        ↓
+JWT Auth
+        ↓
+FastAPI Backend
+        ↓
+Chat Sessions + Messages DB
+        ↓
+LLM (Context = last N messages)
+        ↓
+Text + Voice Response
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+✅ PART 1: File Upload (PDF → Chat with Documents)
+🎯 What this does
+
+User uploads a PDF →
+AI reads the document →
+User can ask questions about that document
+
+This is called RAG (Retrieval-Augmented Generation).
+
+🧠 Architecture (Interview Gold)
+PDF Upload
+ → Text Extraction
+ → Chunking
+ → Embeddings
+ → Vector Search
+ → Relevant Context
+ → LLM Answer
+
+1️⃣ Install Dependencies
+pip install pypdf langchain faiss-cpu
+
+2️⃣ PDF Upload API
+from fastapi import UploadFile, File
+from pypdf import PdfReader
+
+@app.post("/upload-pdf")
+def upload_pdf(file: UploadFile = File(...),
+               user: User = Depends(get_current_user)):
+
+    reader = PdfReader(file.file)
+    text = ""
+
+    for page in reader.pages:
+        text += page.extract_text()
+
+    # save raw text (or chunks) to DB
+    doc = Document(user_id=user.id, content=text)
+    db.add(doc)
+    db.commit()
+
+    return {"msg": "PDF uploaded successfully"}
+
+3️⃣ Chunk the Document
+def chunk_text(text, size=500):
+    words = text.split()
+    chunks = []
+    for i in range(0, len(words), size):
+        chunks.append(" ".join(words[i:i+size]))
+    return chunks
+
+4️⃣ Create Embeddings (FAISS)
+from langchain.embeddings import OpenAIEmbeddings
+from langchain.vectorstores import FAISS
+
+embeddings = OpenAIEmbeddings()
+
+chunks = chunk_text(text)
+vectorstore = FAISS.from_texts(chunks, embeddings)
+vectorstore.save_local(f"vectors/user_{user.id}")
+
+5️⃣ Chat with PDF
+@app.post("/chat-docs")
+def chat_docs(query: str,
+              user: User = Depends(get_current_user)):
+
+    vectorstore = FAISS.load_local(
+        f"vectors/user_{user.id}", embeddings)
+
+    docs = vectorstore.similarity_search(query, k=3)
+
+    context = "\n".join([d.page_content for d in docs])
+
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "Answer using the document only"},
+            {"role": "user", "content": f"Context:\n{context}\n\nQuestion:{query}"}
+        ]
+    )
+
+    return {"reply": response.choices[0].message["content"]}
+
+
+✅ Now users can chat with PDFs
+✅ Very high interview value
+
+🎤 Interview Line (PDF Feature)
+
+I implemented document-based question answering using vector embeddings and semantic search, enabling users to upload PDFs and chat contextually with their documents.
+
+✅ PART 2: Admin Analytics Dashboard
+
+This is VERY RARE in student projects 👑
+
+🎯 Admin Can See:
+
+Total users
+
+Total chats
+
+Messages per user
+
+Active users
+
+Usage trends
+
+1️⃣ Admin Role (User Table)
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True)
+    username = Column(String, unique=True)
+    password = Column(String)
+    is_admin = Column(Boolean, default=False)
+
+2️⃣ Admin Auth Check
+def admin_only(user: User = Depends(get_current_user)):
+    if not user.is_admin:
+        raise HTTPException(403, "Admin access required")
+    return user
+
+3️⃣ Analytics APIs
+📊 Total Stats
+@app.get("/admin/stats")
+def stats(admin: User = Depends(admin_only)):
+    return {
+        "total_users": db.query(User).count(),
+        "total_messages": db.query(ChatMessage).count(),
+        "total_sessions": db.query(ChatSession).count()
+    }
+
+📈 Messages Per User
+@app.get("/admin/messages-per-user")
+def messages_per_user(admin: User = Depends(admin_only)):
+    return db.query(
+        User.username,
+        func.count(ChatMessage.id)
+    ).join(ChatMessage).group_by(User.username).all()
+
+🔥 Active Users (Last 24h)
+from datetime import datetime, timedelta
+
+@app.get("/admin/active-users")
+def active_users(admin: User = Depends(admin_only)):
+    since = datetime.utcnow() - timedelta(days=1)
+    return db.query(ChatMessage.user_id)\
+        .filter(ChatMessage.created_at >= since)\
+        .distinct().count()
+
+4️⃣ Admin Dashboard UI (React)
+AdminDashboard.jsx
+function AdminDashboard() {
+  const [stats, setStats] = useState({});
+
+  useEffect(() => {
+    fetch("/admin/stats", {
+      headers: { Authorization: "Bearer " + token }
+    })
+    .then(res => res.json())
+    .then(setStats);
+  }, []);
+
+  return (
+    <div>
+      <h2>Admin Dashboard</h2>
+      <p>Total Users: {stats.total_users}</p>
+      <p>Total Chats: {stats.total_messages}</p>
+      <p>Total Sessions: {stats.total_sessions}</p>
+    </div>
+  );
+}
+
+🧠 FINAL SYSTEM (BIG PICTURE)
+User / Admin
+   ↓
+React UI
+   ↓
+JWT Auth
+   ↓
+FastAPI Backend
+   ↓
+Chat Sessions + Messages + Docs
+   ↓
+LLM + Vector Search
