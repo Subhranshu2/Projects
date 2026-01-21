@@ -1,0 +1,98 @@
+user_manager/
+ ├── main.py
+ ├── models.py
+ ├── utils.py
+ └── services.py
+
+-------------------------------------------------------------------                               CODE:                       ------------------------------------------------------------------------------------
+
+models.py (Data Layer):
+  # models.py
+
+class User:
+    def __init__(self, username, email, password):
+        self.username = username
+        self.email = email
+        self.password = password
+
+    def check_password(self, input_password):
+        return self.password == input_password
+
+    def is_valid_email(self):
+        return "@" in self.email
+--------------------------------------------------------------
+utils.py (Utilities + Decorator):
+ # utils.py
+import time
+
+def log_execution(func):
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        print(f"Running: {func.__name__}")
+        result = func(*args, **kwargs)
+        end = time.time()
+        print(f"Finished in {end - start:.4f} seconds")
+        return result
+    return wrapper
+---------------------------------------------------------------
+services.py (Business Logic):
+    # services.py
+from models import User
+from utils import log_execution
+
+users_db = []
+
+@log_execution
+def create_user(username, email, password):
+    user = User(username, email, password)
+
+    if not user.is_valid_email():
+        raise ValueError("Invalid email address")
+
+    users_db.append(user)
+    print("User created successfully")
+
+@log_execution
+def list_users():
+    if not users_db:
+        print("No users found")
+        return
+
+    for user in users_db:
+        print(f"Username: {user.username}, Email: {user.email}")
+---------------------------------------------------------------------
+main.py (Controller):
+  # main.py
+from services import create_user, list_users
+
+def main():
+    while True:
+        print("\n1. Create User")
+        print("2. List Users")
+        print("3. Exit")
+
+        choice = input("Choose: ")
+
+        try:
+            if choice == "1":
+                username = input("Username: ")
+                email = input("Email: ")
+                password = input("Password: ")
+
+                create_user(username, email, password)
+
+            elif choice == "2":
+                list_users()
+
+            elif choice == "3":
+                print("Bye!")
+                break
+
+            else:
+                print("Invalid choice")
+
+        except Exception as e:
+            print("Error:", e)
+
+if __name__ == "__main__":
+    main()
