@@ -121,3 +121,25 @@ requirements.txt
 requests
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------------READ ME--------------------------------------------------------------------------------
+
+# LLM Annotation Pipeline
+
+## Overview
+This project automates data annotation using LLM APIs. It processes input files, sends data to an LLM, and generates structured annotations.
+
+## Features
+- File processing (JSON input/output)
+- LLM-based annotation (OpenAI API)
+- CLI-based execution
+- Logging system
+- Modular architecture
+
+## Tech Stack
+Python, REST API, Linux CLI, JSON
+
+## Run Project
+```bash
+pip install -r requirements.txt
+python main.py
