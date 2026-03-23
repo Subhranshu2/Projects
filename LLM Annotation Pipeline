@@ -1,0 +1,123 @@
+Config.Py:-
+OPENAI_API_KEY = "your_api_key_here" 
+MODEL = "gpt-4o-mini"
+INPUT_FILE = "data/input.json"
+OUTPUT_FILE = "data/output.json"
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Scripts/Api_Client.Py:-
+
+import requests
+from config import OPENAI_API_KEY, MODEL
+
+def call_llm(prompt):
+    url = "https://api.openai.com/v1/chat/completions"
+
+    headers = {
+        "Authorization": f"Bearer {OPENAI_API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    data = {
+        "model": MODEL,
+        "messages": [
+            {"role": "system", "content": "You are a data annotation assistant."},
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.3
+    }
+
+    response = requests.post(url, headers=headers, json=data)
+
+    if response.status_code == 200:
+        return response.json()["choices"][0]["message"]["content"]
+    else:
+        print("API Error:", response.text)
+        return None
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Scripts/File_Utils.Py:-
+import json
+import logging
+
+def read_json(file_path):
+    with open(file_path, "r") as f:
+        return json.load(f)
+
+def write_json(file_path, data):
+    with open(file_path, "w") as f:
+        json.dump(data, f, indent=4)
+
+def setup_logger():
+    logging.basicConfig(
+        filename="logs/app.log",
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s"
+    )
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Scripts/Annotator.Py:-
+from scripts.api_client import call_llm
+
+def annotate_text(text):
+    prompt = f"""
+    Analyze the following text and return JSON with:
+    - category
+    - sentiment
+    - keywords
+
+    Text: {text}
+    """
+
+    response = call_llm(prompt)
+
+    return response
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Main.Py:-
+from scripts.file_utils import read_json, write_json, setup_logger
+from scripts.annotator import annotate_text
+from config import INPUT_FILE, OUTPUT_FILE
+import logging
+
+def process():
+    setup_logger()
+    data = read_json(INPUT_FILE)
+
+    results = []
+
+    for item in data:
+        text = item.get("text", "")
+        logging.info(f"Processing: {text}")
+
+        annotation = annotate_text(text)
+
+        results.append({
+            "text": text,
+            "annotation": annotation
+        })
+
+    write_json(OUTPUT_FILE, results)
+    print(" Annotation completed!")
+
+if __name__ == "__main__":
+    process()
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Data/input.json (Sample Input):-
+[
+    {"text": "The product is amazing and works perfectly."},
+    {"text": "Terrible experience, very slow service."}
+]
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+requirements.txt
+requests
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
