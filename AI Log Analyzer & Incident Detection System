@@ -1,0 +1,146 @@
+Config.Py:-
+
+import os
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+MODEL = "gpt-4o-mini"
+
+INPUT_LOG = "logs/system.log"
+OUTPUT_FILE = "output/report.json"
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Scripts/api_Client.Py:-
+
+import requests
+from config import OPENAI_API_KEY, MODEL
+
+def call_llm(prompt):
+    url = "https://api.openai.com/v1/responses"
+
+    headers = {
+        "Authorization": f"Bearer {OPENAI_API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    data = {
+        "model": MODEL,
+        "input": prompt
+    }
+
+    try:
+        response = requests.post(url, headers=headers, json=data)
+
+        if response.status_code == 200:
+            return response.json()["output"][0]["content"][0]["text"]
+        else:
+            print("API Error:", response.text)
+            return None
+
+    except Exception as e:
+        print("Request failed:", e)
+        return None
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+scripts/log_parser.py
+def parse_logs(file_path):
+    important_logs = []
+
+    keywords = ["ERROR", "WARNING", "CRITICAL"]
+
+    try:
+        with open(file_path, "r") as f:
+            for line in f:
+                if any(k in line for k in keywords):
+                    important_logs.append(line.strip())
+    except FileNotFoundError:
+        print("Log file not found!")
+
+    return important_logs
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Scripts/Analyzer.Py
+import json
+from scripts.api_client import call_llm
+
+def analyze_log(log_text):
+    prompt = f"""
+    Analyze the log and return ONLY valid JSON:
+
+    {{
+        "type": "",
+        "severity": "Low/Medium/High",
+        "issue": "",
+        "suggestion": ""
+    }}
+
+    Log: {log_text}
+    """
+
+    response = call_llm(prompt)
+
+    try:
+        return json.loads(response)
+    except:
+        return {
+            "type": "Unknown",
+            "severity": "Unknown",
+            "issue": log_text,
+            "suggestion": "LLM response parsing failed"
+        }
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Main.Py:-
+
+import os
+import json
+from scripts.log_parser import parse_logs
+from scripts.analyzer import analyze_log
+from config import INPUT_LOG, OUTPUT_FILE
+
+def main():
+    os.makedirs("output", exist_ok=True)
+
+    logs = parse_logs(INPUT_LOG)
+
+    if not logs:
+        print("No important logs found!")
+        return
+
+    results = []
+
+    for i, log in enumerate(logs):
+        print(f"Processing {i+1}/{len(logs)}")
+
+        analysis = analyze_log(log)
+
+        results.append({
+            "log": log,
+            "analysis": analysis
+        })
+
+    with open(OUTPUT_FILE, "w") as f:
+        json.dump(results, f, indent=4)
+
+    print(" Analysis completed! Check output/report.json")
+
+if __name__ == "__main__":
+    main()
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Logs/System.log:-
+
+INFO: Server started successfully
+ERROR: Database connection failed
+WARNING: High memory usage detected
+CRITICAL: Unauthorized login attempt
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------
+Requirements.txt:-
+requests
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------
