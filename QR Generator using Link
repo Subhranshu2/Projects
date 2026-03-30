@@ -1,0 +1,14 @@
+// Before running this code enter this in your cmd : pip install qrcode[pil] . This will install python qrcode library.
+
+import qrcode
+
+url = input("Enter the URL: ").strip()
+file_path = "C:\\Users\\sanje\\Desktop\\QRCode.png"
+
+qr = qrcode.QRCode()
+qr.add_data(url)
+
+img = qr.make_image()
+img.save(file_path)
+
+print("QR code was generated!")
