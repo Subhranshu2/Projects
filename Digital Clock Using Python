@@ -18,3 +18,56 @@ def update_time():
 
 update_time()  
 app.mainloop()
+
+
+
+
+----------------------------------------------------------- ADVANCED DIGITAL CLOCK-----------------------------------------------------------------------------
+
+from tkinter import Tk, Label
+from datetime import datetime
+
+app = Tk()
+app.title("🕒 Advanced Digital Clock")
+app.geometry("500x250")
+app.resizable(False, False)
+app.configure(bg="black")
+
+# Fonts
+TIME_FONT = ("Orbitron", 40, "bold")
+DATE_FONT = ("Helvetica", 16)
+
+# Glow layer (background)
+time_glow = Label(app, font=TIME_FONT, fg="blue", bg="black")
+time_glow.place(relx=0.5, rely=0.35, anchor="center")
+
+# Main time (front)
+time_label = Label(app, font=TIME_FONT, fg="cyan", bg="black")
+time_label.place(relx=0.5, rely=0.35, anchor="center")
+
+# Date label
+date_label = Label(app, font=DATE_FONT, fg="white", bg="black")
+date_label.place(relx=0.5, rely=0.65, anchor="center")
+
+def update_time():
+    now = datetime.now()
+
+    #  Correct format: milliseconds BEFORE AM/PM
+    current_time = now.strftime("%I:%M:%S") + f".{now.microsecond // 1000:03d} " + now.strftime("%p")
+
+    # Date + Day
+    current_date = now.strftime("%A, %d %B %Y")
+
+    # Update text
+    time_label.config(text=current_time)
+    time_glow.config(text=current_time)
+
+    # Slight glow offset (clean, minimal)
+    time_glow.place_configure(relx=0.5, rely=0.35, anchor="center", x=2, y=2)
+
+    date_label.config(text=current_date)
+
+    app.after(50, update_time)
+
+update_time()
+app.mainloop()
